@@ -1,32 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Head Tracker</title>
 </head>
+
 <body>
-    <h1>Head Tracker</h1>   
-    
+    <h1>Head Tracker</h1>
+
     <button id="startButton">Başlat</button>
     <button id="cameraButton">Kamerayı Aç / Kapat</button>
+    <button id="resetAxesButton">Ekseni Sıfırla</button>
 
     <video id="video" autoplay playsinline></video>
 
     <canvas id="canvas" style="display: none;"></canvas>
 
 
-<script>
-    document.getElementById('startButton').addEventListener('click', function() {
-        console.log('Başlat butonuna tıklandı');
-    });
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
 
-    document.getElementById('cameraButton').addEventListener('click', function(){
-        console.log('Kamerayı Aç / Kapat butonuna tıklandı');   
-    })
+        function startTracking() {
+            console.log('Takip Başlatıldı');
+        }
+        function resetAxes() {
+            console.log('Eksen Sıfırlandı');
+        }
+        async function cameraToggle() {
+
+            if (stream === null) {
+                try {
+
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true })
+
+                    video.srcObject = stream;
+                }
+
+                catch (error) {
+                    console.error('Kamera açılamadı:', error);
+                }
+            }
+           else {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+            } 
+            
+            console.log('Kamerayı Açıldı / Kapatıldı');
+
+            
+        }
 
 
-</script>
+
+        document.getElementById('startButton').addEventListener('click', function () {
+            startTracking();
+        });
+
+        document.getElementById('cameraButton').addEventListener('click', function () {
+            cameraToggle();
+        });
+
+        document.getElementById('resetAxesButton').addEventListener('click', function () {
+            resetAxes();
+        });
+
+
+    </script>
 </body>
 
 </html>
