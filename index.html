@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Head Tracker</title>
+</head>
+<body>
+    <h1>Head Tracker</h1>   
+    
+    <button id="startButton">Başlat</button>
+    <button id="cameraButton">Kamerayı Aç / Kapat</button>
+
+    <video id="video" autoplay playsinline></video>
+
+    <canvas id="canvas" style="display: none;"></canvas>
+
+
+<script>
+    document.getElementById('startButton').addEventListener('click', function() {
+        console.log('Başlat butonuna tıklandı');
+    });
+
+    document.getElementById('cameraButton').addEventListener('click', function(){
+        console.log('Kamerayı Aç / Kapat butonuna tıklandı');   
+    })
+
+
+</script>
+</body>
+
+</html>
