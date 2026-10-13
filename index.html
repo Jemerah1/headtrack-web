@@ -10,18 +10,21 @@
 <body>
     <h1>Head Tracker</h1>
 
-    <button id="startButton">Başlat</button>
-    <button id="cameraButton">Kamerayı Aç / Kapat</button>
-    <button id="resetAxesButton">Ekseni Sıfırla</button>
+    <button id="startButton">Başlat </button>
+    <button id="cameraButton">Kamerayı Aç / Kapat </button>
+    <button id="resetAxesButton">Ekseni Sıfırla </button>
 
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay playsinline> </video>
 
-    <canvas id="canvas" style="display: none;"></canvas>
-
+    <canvas id="canvas" style="display: none;"> </canvas>
+    
+    <select id="cameraSelect"> </select>
 
     <script>
         let stream = null;
         const video = document.getElementById('video');
+            
+        const cameraSelect = document.getElementById('cameraSelect');
 
         function startTracking() {
             console.log('Takip Başlatıldı');
@@ -37,23 +40,38 @@
                     stream = await navigator.mediaDevices.getUserMedia({ video: true })
 
                     video.srcObject = stream;
+                    console.log('Kamera Açıldı');
+                    await listCameras();
+
                 }
 
                 catch (error) {
                     console.error('Kamera açılamadı:', error);
                 }
             }
-           else {
+            else {
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
                 video.srcObject = null;
-            } 
-            
-            console.log('Kamerayı Açıldı / Kapatıldı');
+                console.log('Kamera Kapatıldı');
+            }
 
-            
         }
 
+        async function listCameras() {
+            const cihazlar = await navigator.mediaDevices.enumerateDevices();
+            const kameralar = cihazlar.filter(kamera => kamera.kind === 'videoinput');
+            console.log('Kameralar:', kameralar);
+
+            cameraSelect.innerHTML = '';
+
+            kameralar.forEach(kamera => {
+                const option = document.createElement('option');
+                option.value = kamera.deviceId;
+                option.text = kamera.label || `Kamera ${cameraSelect.length + 1}`;
+                cameraSelect.appendChild(option);
+            });
+        }
 
 
         document.getElementById('startButton').addEventListener('click', function () {
@@ -68,6 +86,10 @@
             resetAxes();
         });
 
+        cameraSelect.addEventListener('change',function() {
+            const cameraSelectId = cameraSelect.value;
+            console.log('Seçilen Kamera ID:', cameraSelectId);
+        });
 
     </script>
 </body>
