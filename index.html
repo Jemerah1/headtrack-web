@@ -20,14 +20,19 @@
     
     <select id="cameraSelect"> </select>
 
-    <script>
+    <script type="module">
+    
+    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0";
+        
+    let faceLandmarker = null;
         let stream = null;
         const video = document.getElementById('video');
             
         const cameraSelect = document.getElementById('cameraSelect');
 
-        function startTracking() {
+        async function startTracking() {
             console.log('Takip Başlatıldı');
+                await loadModel();
         }
         function resetAxes() {
             console.log('Eksen Sıfırlandı');
@@ -67,6 +72,21 @@
             console.log('Seçilen Kamera:', stream.getVideoTracks()[0].label);
         }
 
+        async function loadModel(){
+        
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm"
+            );
+            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+                },
+                runningMode: "VIDEO",
+                numFaces: 1,
+                outputFacialTransformationMatrixes: true
+            });
+                    console.log('Model Yüklendi');
+        }
 
         async function listCameras() {
             const cihazlar = await navigator.mediaDevices.enumerateDevices();
@@ -110,7 +130,7 @@
         
             
 
-    </script>
+    </script type = "module">
 </body>
 
 </html>
