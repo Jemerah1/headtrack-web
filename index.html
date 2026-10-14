@@ -37,12 +37,12 @@
             if (stream === null) {
                 try {
 
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true })
-
-                    video.srcObject = stream;
+                    await startCamera();    
                     console.log('Kamera Açıldı');
-                    await listCameras();
-
+                        if (cameraSelect.value === '') {
+                            await listCameras();
+                        }
+                        
                 }
 
                 catch (error) {
@@ -58,6 +58,16 @@
 
         }
 
+        async function startCamera() {
+            const  kisitlamalar = cameraSelect.value === ''
+                ? { video: true }
+                : { video: { deviceId:{ exact: cameraSelect.value } } };
+            stream = await navigator.mediaDevices.getUserMedia(kisitlamalar);
+            video.srcObject = stream;
+            console.log('Seçilen Kamera:', stream.getVideoTracks()[0].label);
+        }
+
+
         async function listCameras() {
             const cihazlar = await navigator.mediaDevices.enumerateDevices();
             const kameralar = cihazlar.filter(kamera => kamera.kind === 'videoinput');
@@ -71,6 +81,9 @@
                 option.text = kamera.label || `Kamera ${cameraSelect.length + 1}`;
                 cameraSelect.appendChild(option);
             });
+            if (stream !== null) {
+                cameraSelect.value = stream.getVideoTracks()[0].getSettings().deviceId;
+            }
         }
 
 
@@ -86,10 +99,16 @@
             resetAxes();
         });
 
-        cameraSelect.addEventListener('change',function() {
-            const cameraSelectId = cameraSelect.value;
-            console.log('Seçilen Kamera ID:', cameraSelectId);
+        cameraSelect.addEventListener('change', async function () {
+            if (stream !== null) {
+                stream.getTracks().forEach(track => track.stop());
+                await listCameras();
+            }
+            
         });
+            
+        
+            
 
     </script>
 </body>
