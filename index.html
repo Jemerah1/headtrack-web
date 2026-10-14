@@ -32,8 +32,21 @@
 
         async function startTracking() {
             console.log('Takip Başlatıldı');
-                await loadModel();
+                stream === null;
+                console.log('Kammera Yok');
+                faceLandmarker === null; await loadModel();
+                trackLoop();
         }
+
+            let lastVideoTime = -1;
+            function trackLoop() {
+               if (videocurrentTime !== lastVideoTime);
+               const results = faceLandmarker.detectForVideo(video, performance.now());
+                    lastVideoTime = video.currentTime;
+                    results.faceLandmarkers.length > 0 ? console.log('Yüz Bulundu') : console.log('Yüz Bulunamadı');
+                    requestAnimationFrame(trackLoop);
+            }
+
         function resetAxes() {
             console.log('Eksen Sıfırlandı');
         }
