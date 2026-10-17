@@ -17,35 +17,54 @@
     <video id="video" autoplay playsinline> </video>
 
     <canvas id="canvas" style="display: none;"> </canvas>
-    
+
     <select id="cameraSelect"> </select>
 
     <script type="module">
-    
-    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0";
-        
-    let faceLandmarker = null;
+
+        import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0";
+
+        let faceLandmarker = null;
         let stream = null;
         const video = document.getElementById('video');
-            
+
         const cameraSelect = document.getElementById('cameraSelect');
 
+        let isTracking = false;
         async function startTracking() {
+            if (isTracking) {
+                console.log('Zaten Takip Ediliyor');
+                return;
+            }
             console.log('Takip Başlatıldı');
-                stream === null;
-                console.log('Kammera Yok');
-                faceLandmarker === null; await loadModel();
-                trackLoop();
+
+            if (stream === null) {
+                console.log('Kamera Yok');
+                return;
+            }
+
+            isTracking = true;
+
+            if (faceLandmarker === null) {
+                await loadModel();
+            }
+            trackLoop();
         }
 
-            let lastVideoTime = -1;
-            function trackLoop() {
-               if (videocurrentTime !== lastVideoTime);
-               const results = faceLandmarker.detectForVideo(video, performance.now());
-                    lastVideoTime = video.currentTime;
-                    results.faceLandmarkers.length > 0 ? console.log('Yüz Bulundu') : console.log('Yüz Bulunamadı');
-                    requestAnimationFrame(trackLoop);
+
+        let lastVideoTime = -1;
+        function trackLoop() {
+            if (!isTracking) {
+                return;
             }
+
+            if (video.currentTime !== lastVideoTime) {
+                const results = faceLandmarker.detectForVideo(video, performance.now());
+                lastVideoTime = video.currentTime;
+                results.faceLandmarks.length > 0 ? console.log('Yüz Bulundu') : console.log('Yüz Bulunamadı');
+            }
+            requestAnimationFrame(trackLoop);
+        }
 
         function resetAxes() {
             console.log('Eksen Sıfırlandı');
@@ -55,12 +74,12 @@
             if (stream === null) {
                 try {
 
-                    await startCamera();    
+                    await startCamera();
                     console.log('Kamera Açıldı');
-                        if (cameraSelect.value === '') {
-                            await listCameras();
-                        }
-                        
+                    if (cameraSelect.value === '') {
+                        await listCameras();
+                    }
+
                 }
 
                 catch (error) {
@@ -72,21 +91,22 @@
                 stream = null;
                 video.srcObject = null;
                 console.log('Kamera Kapatıldı');
+                isTracking = false;
             }
 
         }
 
         async function startCamera() {
-            const  kisitlamalar = cameraSelect.value === ''
+            const kisitlamalar = cameraSelect.value === ''
                 ? { video: true }
-                : { video: { deviceId:{ exact: cameraSelect.value } } };
+                : { video: { deviceId: { exact: cameraSelect.value } } };
             stream = await navigator.mediaDevices.getUserMedia(kisitlamalar);
             video.srcObject = stream;
             console.log('Seçilen Kamera:', stream.getVideoTracks()[0].label);
         }
 
-        async function loadModel(){
-        
+        async function loadModel() {
+
             const vision = await FilesetResolver.forVisionTasks(
                 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm"
             );
@@ -98,7 +118,7 @@
                 numFaces: 1,
                 outputFacialTransformationMatrixes: true
             });
-                    console.log('Model Yüklendi');
+            console.log('Model Yüklendi');
         }
 
         async function listCameras() {
@@ -135,15 +155,15 @@
         cameraSelect.addEventListener('change', async function () {
             if (stream !== null) {
                 stream.getTracks().forEach(track => track.stop());
-                await listCameras();
+                await startCamera();
             }
-            
-        });
-            
-        
-            
 
-    </script type = "module">
+        });
+
+
+
+
+    </script>
 </body>
 
 </html>
