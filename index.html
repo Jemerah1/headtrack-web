@@ -11,6 +11,7 @@
     <h1>Head Tracker</h1>
 
     <p id="status">Hazır</p>
+    <p id="Açılar">Yaw: - | Pitch: - | Roll: - </p>
 
     <button id="startButton">Başlat </button>
     <button id="cameraButton">Kamerayı Aç / Kapat </button>
@@ -35,7 +36,12 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const drawingUtils = new DrawingUtils(ctx);
+        const startButton = document.getElementById('startButton');
+        const angleText = document.getElementById('Açılar');
         // ----------------- TANIMLAMALAR -----------------
+
+        let sonAcilar= { yaw: 0, pitch: 0, roll: 0 };
+        let merkez = { yaw: 0, pitch: 0, roll: 0 };
 
         let isTracking = false;
         async function startTracking() {
@@ -53,6 +59,7 @@
             }
 
             isTracking = true;
+            startButton.textContent = 'Durdur';
 
             if (faceLandmarker === null) {
                 setStatus('Model yükleniyor...', 'gray')
@@ -64,6 +71,13 @@
             trackLoop();
         }
 
+        function stopTracking() {
+            isTracking = false;
+            startButton.textContent = 'Başlat';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setStatus('Takip Durduruldu', 'gray');
+            console.log('Takip Durduruldu');
+     }
 
         let lastVideoTime = -1;
         function trackLoop() {
@@ -83,118 +97,147 @@
                         FaceLandmarker.FACE_LANDMARKS_TESSELATION,
                         { color: "#C0C0C070", lineWidth: 1 }
                     );
+                    if (results.facialTransformationMatrixes) {
+                        const matris = results.facialTransformationMatrixes[0];
+                        sonAcilar = matrisiAciyaCevir(matris.data);
+
+                        const yaw = sonAcilar.yaw - merkez.yaw;
+                        const pitch = sonAcilar.pitch - merkez.pitch;
+                        const roll = sonAcilar.roll - merkez.roll;
+                        
+                        angleText.textContent = 
+                        `Yaw: ${sonAcilar.yaw.toFixed(1)} | Pitch: ${sonAcilar.pitch.toFixed(1)} | Roll: ${sonAcilar.roll.toFixed(1)}`;
+                    }
                 }
-                
+
                 requestAnimationFrame(trackLoop);
             }
         }
 
-            function resetAxes() {
-                console.log('Eksen Sıfırlandı');
-                setStatus('Eksen Sıfırlandı', 'green');
-            }
-            async function cameraToggle() {
+        function matrisiAciyaCevir(d) {
+             const radyanToDerece = 180 / Math.PI;
 
-                if (stream === null) {
-                    try {
+             const pitch = Math.asin(-d[9]) * radyanToDerece;
+             const yaw = Math.atan2(d[8], d[10]) * radyanToDerece;
+             const roll = Math.atan2(d[1], d[5]) * radyanToDerece;
 
-                        await startCamera();
-                        console.log('Kamera Açıldı');
-                        setStatus('Kamera Açıldı', 'green')
-                        if (cameraSelect.value === '') {
-                            await listCameras();
-                        }
+             return { yaw, pitch, roll };
+        }
 
-                    }
+        function resetAxes() {
+            merkez = { ...sonAcilar };
+            console.log('Eksen Sıfırlandı');
+            setStatus('Eksen Sıfırlandı', 'green');
+        }
+        
+        async function cameraToggle() {
 
-                    catch (error) {
-                        console.error('Kamera açılamadı:', error);
-                        setStatus('Kamera Açılamadı', 'red')
-                    }
-                }
-                else {
-                    stream.getTracks().forEach(track => track.stop());
-                    stream = null;
-                    video.srcObject = null;
-                    console.log('Kamera Kapatıldı');
-                    setStatus('Kamera Kapatıldı', 'gray')
-                    isTracking = false;
-                }
+            if (stream === null) {
+                try {
 
-            }
-
-            async function startCamera() {
-                const kisitlamalar = cameraSelect.value === ''
-                    ? { video: true }
-                    : { video: { deviceId: { exact: cameraSelect.value } } };
-                stream = await navigator.mediaDevices.getUserMedia(kisitlamalar);
-                video.srcObject = stream;
-                console.log('Seçilen Kamera:', stream.getVideoTracks()[0].label);
-            }
-
-            async function loadModel() {
-
-                const vision = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm"
-                );
-                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
-                    },
-                    runningMode: "VIDEO",
-                    numFaces: 1,
-                    outputFacialTransformationMatrixes: true
-                });
-                console.log('Model Yüklendi');
-            }
-
-            async function listCameras() {
-                const cihazlar = await navigator.mediaDevices.enumerateDevices();
-                const kameralar = cihazlar.filter(kamera => kamera.kind === 'videoinput');
-                console.log('Kameralar:', kameralar);
-
-                cameraSelect.innerHTML = '';
-
-                kameralar.forEach(kamera => {
-                    const option = document.createElement('option');
-                    option.value = kamera.deviceId;
-                    option.text = kamera.label || `Kamera ${cameraSelect.length + 1}`;
-                    cameraSelect.appendChild(option);
-                });
-                if (stream !== null) {
-                    cameraSelect.value = stream.getVideoTracks()[0].getSettings().deviceId;
-                }
-            }
-
-
-            document.getElementById('startButton').addEventListener('click', function () {
-                startTracking();
-            });
-
-            document.getElementById('cameraButton').addEventListener('click', function () {
-                cameraToggle();
-            });
-
-            document.getElementById('resetAxesButton').addEventListener('click', function () {
-                resetAxes();
-            });
-
-
-            function setStatus(text, color) {
-                if (statusText.textContent === text) {
-                    return;
-                }
-                statusText.textContent = text;
-                statusText.style.color = color;
-            }
-
-            cameraSelect.addEventListener('change', async function () {
-                if (stream !== null) {
-                    stream.getTracks().forEach(track => track.stop());
                     await startCamera();
+                    console.log('Kamera Açıldı');
+                    setStatus('Kamera Açıldı', 'green')
+                    if (cameraSelect.value === '') {
+                        await listCameras();
+                    }
+
                 }
 
+                catch (error) {
+                    console.error('Kamera açılamadı:', error);
+                    setStatus('Kamera Açılamadı', 'red')
+                }
+            }
+            else {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+                console.log('Kamera Kapatıldı');
+                stopTracking = false;
+                setStatus('Kamera Kapatıldı', 'gray')
+
+            }
+
+        }
+
+        async function startCamera() {
+            const kisitlamalar = cameraSelect.value === ''
+                ? { video: true }
+                : { video: { deviceId: { exact: cameraSelect.value } } };
+            stream = await navigator.mediaDevices.getUserMedia(kisitlamalar);
+            video.srcObject = stream;
+            console.log('Seçilen Kamera:', stream.getVideoTracks()[0].label);
+        }
+
+        async function loadModel() {
+
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm"
+            );
+            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+                },
+                runningMode: "VIDEO",
+                numFaces: 1,
+                outputFacialTransformationMatrixes: true
             });
+            console.log('Model Yüklendi');
+        }
+
+        async function listCameras() {
+            const cihazlar = await navigator.mediaDevices.enumerateDevices();
+            const kameralar = cihazlar.filter(kamera => kamera.kind === 'videoinput');
+            console.log('Kameralar:', kameralar);
+
+            cameraSelect.innerHTML = '';
+
+            kameralar.forEach(kamera => {
+                const option = document.createElement('option');
+                option.value = kamera.deviceId;
+                option.text = kamera.label || `Kamera ${cameraSelect.length + 1}`;
+                cameraSelect.appendChild(option);
+            });
+            if (stream !== null) {
+                cameraSelect.value = stream.getVideoTracks()[0].getSettings().deviceId;
+            }
+        }
+
+
+        document.getElementById('startButton').addEventListener('click', function () {
+            if (isTracking) {
+                stopTracking();
+            } else {
+                startTracking();
+            }
+            
+        });
+
+        document.getElementById('cameraButton').addEventListener('click', function () {
+            cameraToggle();
+        });
+
+        document.getElementById('resetAxesButton').addEventListener('click', function () {
+            resetAxes();
+        });
+
+
+        function setStatus(text, color) {
+            if (statusText.textContent === text) {
+                return;
+            }
+            statusText.textContent = text;
+            statusText.style.color = color;
+        }
+
+        cameraSelect.addEventListener('change', async function () {
+            if (stream !== null) {
+                stream.getTracks().forEach(track => track.stop());
+                await startCamera();
+            }
+
+        });
 
 
 
