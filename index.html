@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html lang="tr">
 
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Head Tracker</title>
+    <style>
+        #imlec {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: red;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+    </style>
 </head>
 
 <body>
     <h1>Head Tracker</h1>
 
     <p id="status">Hazır</p>
-    <p id="Açılar">Yaw: - | Pitch: - | Roll: - </p>
+    <p id="Acılar">Yaw: - | Pitch: - | Roll: - </p>
 
     <button id="startButton">Başlat </button>
     <button id="cameraButton">Kamerayı Aç / Kapat </button>
@@ -20,6 +35,8 @@
     <video id="video" autoplay playsinline> </video>
 
     <canvas id="canvas"> </canvas>
+
+    <div id=" imlec"> </div>
 
     <select id="cameraSelect"> </select>
 
@@ -37,10 +54,16 @@
         const ctx = canvas.getContext('2d');
         const drawingUtils = new DrawingUtils(ctx);
         const startButton = document.getElementById('startButton');
-        const angleText = document.getElementById('Açılar');
+        const angleText = document.getElementById('Acılar');
+
+        const imlec = document.getElementById('imlec');
+        const max_yaw = 30;   
+        const max_pitch = 30; 
+        const yon_x = 1; 
+        const yon_y = 1;
         // ----------------- TANIMLAMALAR -----------------
 
-        let sonAcilar= { yaw: 0, pitch: 0, roll: 0 };
+        let sonAcilar = { yaw: 0, pitch: 0, roll: 0 };
         let merkez = { yaw: 0, pitch: 0, roll: 0 };
 
         let isTracking = false;
@@ -75,9 +98,13 @@
             isTracking = false;
             startButton.textContent = 'Başlat';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            imlec.style.left = '50%';
+            imlec.style.top = '50%';
+
             setStatus('Takip Durduruldu', 'gray');
             console.log('Takip Durduruldu');
-     }
+        }
 
         let lastVideoTime = -1;
         function trackLoop() {
@@ -105,8 +132,10 @@
                         const pitch = sonAcilar.pitch - merkez.pitch;
                         const roll = sonAcilar.roll - merkez.roll;
                         
-                        angleText.textContent = 
-                        `Yaw: ${sonAcilar.yaw.toFixed(1)} | Pitch: ${sonAcilar.pitch.toFixed(1)} | Roll: ${sonAcilar.roll.toFixed(1)}`;
+                        imlecGuncelle(yaw, pitch);
+
+                        angleText.textContent =
+                            `Yaw: ${yaw.toFixed(1)} | Pitch: ${pitch.toFixed(1)} | Roll: ${roll.toFixed(1)}`;
                     }
                 }
 
@@ -115,13 +144,28 @@
         }
 
         function matrisiAciyaCevir(d) {
-             const radyanToDerece = 180 / Math.PI;
+            const radyanToDerece = 180 / Math.PI;
 
-             const pitch = Math.asin(-d[9]) * radyanToDerece;
-             const yaw = Math.atan2(d[8], d[10]) * radyanToDerece;
-             const roll = Math.atan2(d[1], d[5]) * radyanToDerece;
+            const pitch = Math.asin(-d[9]) * radyanToDerece;
+            const yaw = Math.atan2(d[8], d[10]) * radyanToDerece;
+            const roll = Math.atan2(d[1], d[5]) * radyanToDerece;
 
-             return { yaw, pitch, roll };
+            return { yaw, pitch, roll };
+        }
+
+        function imlecGuncelle(yaw, pitch){
+
+            let oranX = (yaw / MAX_YAW) * YON_X;
+            let oranY = (pitch / MAX_PITCH) * YON_Y;
+
+            oranX= Math.max(-1, Math.min(1, oranX));
+            oranY= Math.max(-1, Math.min(1, oranY));
+
+            const x = window.innerWidth / 2 + oranX * (window.innerWidth / 2);
+            const y = window.innerHeight / 2 + oranY * (window.innerHeight / 2);
+
+            imlec.style.left = x + 'px';
+            imlec.style.top = y + 'px';
         }
 
         function resetAxes() {
@@ -129,7 +173,7 @@
             console.log('Eksen Sıfırlandı');
             setStatus('Eksen Sıfırlandı', 'green');
         }
-        
+
         async function cameraToggle() {
 
             if (stream === null) {
@@ -154,7 +198,7 @@
                 stream = null;
                 video.srcObject = null;
                 console.log('Kamera Kapatıldı');
-                stopTracking = false;
+                stopTracking();
                 setStatus('Kamera Kapatıldı', 'gray')
 
             }
@@ -211,7 +255,7 @@
             } else {
                 startTracking();
             }
-            
+
         });
 
         document.getElementById('cameraButton').addEventListener('click', function () {
