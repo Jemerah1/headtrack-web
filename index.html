@@ -27,6 +27,7 @@
 
     <p id="status">Hazır</p>
     <p id="Acılar">Yaw: - | Pitch: - | Roll: - </p>
+    <p id="fareDurum">Gerçek fare: kapalı (M tuşu)</p>
 
     <button id="startButton">Başlat </button>
     <button id="cameraButton">Kamerayı aç</button>
@@ -56,13 +57,17 @@
         const startButton = document.getElementById('startButton');
         const cameraButton = document.getElementById('cameraButton');
         const angleText = document.getElementById('Acılar');
+        const fareDurum = document.getElementById('fareDurum');
+        let soket = null;
+        let gercekfare = false;
 
         const imlec = document.getElementById('imlec');
         imlec.style.display = 'none';
-        const MAX_YAW = 30;   
-        const MAX_PITCH = 20; 
-        const YON_X = 1; 
+        const MAX_YAW = 30;
+        const MAX_PITCH = 20;
+        const YON_X = 1;
         const YON_Y = 1;
+        const OLU_BOLGE = 2;
         const YUMUSAKLIK = 0.2;
         // ----------------- TANIMLAMALAR -----------------
 
@@ -104,14 +109,14 @@
             isTracking = false;
             startButton.textContent = 'Başlat';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             imlec.style.left = '50%';
             imlec.style.top = '50%';
             imlec.style.display = 'none';
 
             yumusakYaw = 0;
             yumusakPitch = 0;
-            
+
             setStatus('Takip Durduruldu', 'gray');
             console.log('Takip Durduruldu');
         }
@@ -141,9 +146,9 @@
                         const yaw = sonAcilar.yaw - merkez.yaw;
                         const pitch = sonAcilar.pitch - merkez.pitch;
                         const roll = sonAcilar.roll - merkez.roll;
-                        
-                        yumusakYaw += (yaw - yumusakYaw) * YUMUSAKLIK;
-                        yumusakPitch += (pitch - yumusakPitch) * YUMUSAKLIK;
+
+                        yumusakYaw += (oluBolge(yaw) - yumusakYaw) * YUMUSAKLIK;
+                        yumusakPitch += (oluBolge(pitch) - yumusakPitch) * YUMUSAKLIK;
 
                         imlecGuncelle(yumusakYaw, yumusakPitch);
 
@@ -153,7 +158,7 @@
                 }
 
             }
-         requestAnimationFrame(trackLoop);
+            requestAnimationFrame(trackLoop);
         }
 
         function matrisiAciyaCevir(d) {
@@ -166,19 +171,41 @@
             return { yaw, pitch, roll };
         }
 
-        function imlecGuncelle(yaw, pitch){
+        function imlecGuncelle(yaw, pitch) {
 
             let oranX = (yaw / MAX_YAW) * YON_X;
             let oranY = (pitch / MAX_PITCH) * YON_Y;
 
-            oranX= Math.max(-1, Math.min(1, oranX));
-            oranY= Math.max(-1, Math.min(1, oranY));
+            oranX = Math.max(-1, Math.min(1, oranX));
+            oranY = Math.max(-1, Math.min(1, oranY));
+
+            if (gercekFare && soket !== null && soket.readyState === WebSocket.OPEN) {
+                soket.send(JSON.stringify({ x: oranX, y: oranY }));
+            }
 
             const x = window.innerWidth / 2 + oranX * (window.innerWidth / 2);
             const y = window.innerHeight / 2 + oranY * (window.innerHeight / 2);
 
             imlec.style.left = x + 'px';
             imlec.style.top = y + 'px';
+        }
+
+        function oluBolge(deger) {
+            if (Math.abs(deger) < OLU_BOLGE) {
+                return 0;
+            }
+            return deger - Math.sign(deger) * OLU_BOLGE;
+        }
+
+        function soketBaglan() {
+            soket = new WebSocket('ws://localhost:8765');
+
+            soket.onclose = function () {
+                soket = null;
+                gercekfare = false;
+                fareDurum.textContent = 'Gerçek fare: kapalı (Program bağlı değil, M tuşu)';
+                console.log('Soket kapandı');
+            }
         }
 
         function resetAxes() {
@@ -215,7 +242,7 @@
                 stopTracking();
                 setStatus('Kamera Kapatıldı', 'gray')
                 cameraButton.textContent = 'Kamerayı Aç';
-                
+
             }
 
         }
@@ -298,7 +325,18 @@
 
         });
 
-
+        document.addEventListener('keydown', function (e) {
+            if (e.code !== 'KeyM') {
+                return;
+            }
+            gercekFare = !gercekFare;
+            if (gercekFare && soket === null) {
+                soketBaglan();
+            }
+            fareDurum.textContent = gercekFare
+                ? 'Gerçek fare: AÇIK (kapatmak için M)'
+                : 'Gerçek fare: kapalı (M tuşu)';
+        });
 
     </script>
 </body>
