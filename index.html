@@ -63,10 +63,13 @@
         const MAX_PITCH = 20; 
         const YON_X = 1; 
         const YON_Y = 1;
+        const YUMUSAKLIK = 0.2;
         // ----------------- TANIMLAMALAR -----------------
 
         let sonAcilar = { yaw: 0, pitch: 0, roll: 0 };
         let merkez = { yaw: 0, pitch: 0, roll: 0 };
+        let yumusakYaw = 0;
+        let yumusakPitch = 0;
 
         let isTracking = false;
         async function startTracking() {
@@ -106,6 +109,9 @@
             imlec.style.top = '50%';
             imlec.style.display = 'none';
 
+            yumusakYaw = 0;
+            yumusakPitch = 0;
+            
             setStatus('Takip Durduruldu', 'gray');
             console.log('Takip Durduruldu');
         }
@@ -136,7 +142,10 @@
                         const pitch = sonAcilar.pitch - merkez.pitch;
                         const roll = sonAcilar.roll - merkez.roll;
                         
-                        imlecGuncelle(yaw, pitch);
+                        yumusakYaw += (yaw - yumusakYaw) * YUMUSAKLIK;
+                        yumusakPitch += (pitch - yumusakPitch) * YUMUSAKLIK;
+
+                        imlecGuncelle(yumusakYaw, yumusakPitch);
 
                         angleText.textContent =
                             `Yaw: ${yaw.toFixed(1)} | Pitch: ${pitch.toFixed(1)} | Roll: ${roll.toFixed(1)}`;
