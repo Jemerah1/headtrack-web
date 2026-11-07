@@ -29,7 +29,7 @@
     <p id="Acılar">Yaw: - | Pitch: - | Roll: - </p>
 
     <button id="startButton">Başlat </button>
-    <button id="cameraButton">Kamerayı Aç / Kapat </button>
+    <button id="cameraButton">Kamerayı aç</button>
     <button id="resetAxesButton">Ekseni Sıfırla </button>
 
     <video id="video" autoplay playsinline> </video>
@@ -54,9 +54,11 @@
         const ctx = canvas.getContext('2d');
         const drawingUtils = new DrawingUtils(ctx);
         const startButton = document.getElementById('startButton');
+        const cameraButton = document.getElementById('cameraButton');
         const angleText = document.getElementById('Acılar');
 
         const imlec = document.getElementById('imlec');
+        imlec.style.display = 'none';
         const MAX_YAW = 30;   
         const MAX_PITCH = 20; 
         const YON_X = 1; 
@@ -83,6 +85,7 @@
 
             isTracking = true;
             startButton.textContent = 'Durdur';
+            imlec.style.display = 'block';
 
             if (faceLandmarker === null) {
                 setStatus('Model yükleniyor...', 'gray')
@@ -101,6 +104,7 @@
             
             imlec.style.left = '50%';
             imlec.style.top = '50%';
+            imlec.style.display = 'none';
 
             setStatus('Takip Durduruldu', 'gray');
             console.log('Takip Durduruldu');
@@ -139,8 +143,8 @@
                     }
                 }
 
-                requestAnimationFrame(trackLoop);
             }
+         requestAnimationFrame(trackLoop);
         }
 
         function matrisiAciyaCevir(d) {
@@ -182,6 +186,7 @@
                     await startCamera();
                     console.log('Kamera Açıldı');
                     setStatus('Kamera Açıldı', 'green')
+                    cameraButton.textContent = 'Kamerayı Kapat';
                     if (cameraSelect.value === '') {
                         await listCameras();
                     }
@@ -200,7 +205,8 @@
                 console.log('Kamera Kapatıldı');
                 stopTracking();
                 setStatus('Kamera Kapatıldı', 'gray')
-
+                cameraButton.textContent = 'Kamerayı Aç';
+                
             }
 
         }
